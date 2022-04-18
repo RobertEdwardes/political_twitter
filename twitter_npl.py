@@ -155,3 +155,101 @@ def cos_similarity(textlist):
     TfidfVec = TfidfVectorizer()
     tfidf = TfidfVec.fit_transform(textlist)
     return (tfidf * tfidf.T).toarray()
+
+# n for noun files, v for verb files, a for adjective files, r for adverb
+pos_to_lemmatize={'NN':'n','NNS':'n','NNP':'n','NPPS':'n','WP':'n','WP$':'n',
+                 'VB':'v','VBD':'v','VBG':'v','VBN':'v','VBP':'v','VBZ':'v',
+                 'JJ':'a','JJR':'a','JJS':'a',
+                 'RB':'r','RBR':'r','RBS':'r','WRB':'r'}
+
+def processed_feature(text):
+    # Removing URLS
+    processed_feature = re.sub(r'https?:\S+', '', text)
+    # Remove all the special characters
+    processed_feature = re.sub(r'\W', ' ', processed_feature)
+    # remove all single characters
+    processed_feature= re.sub(r'\s+[a-zA-Z]\s+', ' ', processed_feature)
+    # Remove single characters from the start
+    processed_feature = re.sub(r'\^[a-zA-Z]\s+', ' ', processed_feature) 
+    # Substituting multiple spaces with single space
+    processed_feature = re.sub(r'\s+', ' ', processed_feature, flags=re.I)
+    # Removing prefixed 'b'
+    processed_feature = re.sub(r'^b\s+', '', processed_feature)
+    # Converting to Lowercase remove RT for retweets
+    processed_feature = processed_feature.lower().replace('RT ','')
+    return processed_feature
+
+def create_bag_of_words(text, lemmatize=True):
+    tokenized_word = nltk.tokenize.word_tokenize(text)
+    stop_words = set(nltk.corpus.stopwords.words("english"))
+    filtered_sent=[]
+    for w in tokenized_word:
+        if w not in stop_words:
+            filtered_sent.append(w)
+    pos_taged = nltk.pos_tag(filtered_sent)
+    ps  = nltk.stem.PorterStemmer()
+    lem = nltk.stem.wordnet.WordNetLemmatizer()
+    bag_of_words = []
+    if lemmatize:
+        for tag in pos_taged:
+            if tag[1] in pos_to_lemmatize:
+                bag_of_words.append(lem.lemmatize(tag[0],pos_to_lemmatize[tag[1]]))
+            else:
+                bag_of_words.append(ps.stem(tag[0]))
+    else:
+        for w in filtered_sent:
+            bag_of_words.append(ps.stem(w))
+    return bag_of_words
+
+def vadar(text):
+    out_put={'neg':None,
+             'neu':None,
+             'pos':None,
+             'comp':None}
+    sia = SentimentIntensityAnalyzer()
+    out_put['neg'] = sia.polarity_scores(text)['neg']
+    out_put['neu'] = sia.polarity_scores(text)['neu']
+    out_put['pos'] = sia.polarity_scores(text)['pos']
+    out_put['comp'] = sia.polarity_scores(text)['compound']
+    return out_put
+
+def cos_similarity(textlist):
+    TfidfVec = TfidfVectorizer()
+    tfidf = TfidfVec.fit_transform(textlist)
+    return (tfidf * tfidf.T).toarray()
+
+def setiment(con, inc_rt=False):
+    cur = con.cursor()
+    _proc = pd.read_sql_query("SELECT tweet_id FROM tweet_setiment",con)
+    _proc = _proc['tweet_id'].tolist()
+    _proc = ','.join([str(i) for i in _proc])
+    if _proc:
+        if not inc_rt:
+            df = pd.read_sql_query(f'SELECT * FROM tweets WHERE retweet = "False" AND tweet_id NOT IN ({_proc})',con)
+        else:
+            df = pd.read_sql_query(f'SELECT * FROM tweets WHERE tweet_id NOT IN ({_proc})',con)
+    else:
+        if not inc_rt:
+            df = pd.read_sql_query(f'SELECT * FROM tweets WHERE retweet = "False"',con)
+        else:
+            df = pd.read_sql_query(f'SELECT * FROM tweets',con)
+    full_pt = []
+    for x,y in list(set(list(zip(df['pull_time'].tolist(),df['query_idx'].tolist())))):
+        df_chunck = df[(df['pull_time'] == x) & (df['query_idx'] == y) ]
+        for idx, row in df_chunck.iterrows():
+            pt = processed_feature(row['text'])
+            tw= create_bag_of_words(pt)
+            op = vadar(pt)
+            cur.execute(f"""INSERT INTO tweet_setiment (tweet_id , tokens , setiment_neg , setiment_neu , setiment_pos , setiment_comp )
+                            VALUES({row['tweet_id']},"{tw}",{op['neg']},{op['neu']},{op['pos']},{op['comp']})""")
+            con.commit()
+            full_pt.append(pt)
+        sim = cos_similarity(full_pt)
+        query_pull_mean = np.matrix(sim).mean()
+        bag_group = create_bag_of_words(' '.join(full_pt))
+        str_agg = vadar(' '.join(full_pt))
+        fd = nltk.probability.FreqDist(bag_group)
+        feq = fd.most_common(10)
+        cur.execute(f"""INSERT INTO query_setiment (query_idx , pull_time , tokens , setiment_neg , setiment_neu , setiment_pos , setiment_comp , average_similarity, rt_included )
+                        VALUES ({row['query_idx']},"{row['pull_time']}","{feq}",{str_agg['neg']},{str_agg['neu']},{str_agg['pos']},{str_agg['comp']}, {query_pull_mean}, "{inc_rt}")""")
+    con.commit()
