@@ -1,0 +1,12 @@
+LICENSE.txt
+MANIFEST.in
+README.md
+setup.cfg
+setup.py
+src/basic_twitter_nlp/__init__.py
+src/basic_twitter_nlp/basic_twitter_npl.py
+src/basictwitternlp.egg-info/PKG-INFO
+src/basictwitternlp.egg-info/SOURCES.txt
+src/basictwitternlp.egg-info/dependency_links.txt
+src/basictwitternlp.egg-info/requires.txt
+src/basictwitternlp.egg-info/top_level.txt
