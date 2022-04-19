@@ -8,7 +8,7 @@ long_description = (here / 'README.md').read_text(encoding='utf-8')
 setup(
     
     name='basictwitternlp',  
-    version='0.1.0',  
+    version='0.1.1',  
     description='Scrape Twitter based off query and runs NLTK vader and cos similarity model', 
     long_description=long_description, 
     long_description_content_type='text/markdown', 
@@ -28,6 +28,6 @@ setup(
     ],
     packages=find_packages(where='src'), 
     python_requires='>=3.6, <4',
-    install_requires=['datetime','sqlite3','tweepy','re','nltk','pandas','numpy','sklearn'], 
+    install_requires=['datetime','sqlite3','request','re','nltk','pandas','numpy','sklearn'], 
     package_dir={'': 'src'},
 )

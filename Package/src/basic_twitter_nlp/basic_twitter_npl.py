@@ -1,6 +1,7 @@
 import datetime
 import sqlite3 as sql 
-import tweepy
+#import tweepy
+import request
 import re
 import nltk
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
@@ -35,7 +36,7 @@ def add_query(twitter_query, con):
 
 
     
-def get_queried_tweets(con, client, querydf_row, run_time):
+def get_queried_tweets(con, bearertoken, querydf_row, run_time):
     cur = con.cursor()
     query_idx = querydf_row['query_idx']
     query = querydf_row['query']
@@ -43,19 +44,24 @@ def get_queried_tweets(con, client, querydf_row, run_time):
         start_time = querydf_row['First_ran']
     else:
         start_time = querydf_row['Last_ran']
-    res = client.search_recent_tweets(query=query, start_time=start_time ,expansions=["author_id"] )
+    headers = {'Authorization': 'Bearer ' +
+       bearertoken, 'Content-Type': 'application/json'}
+    BASE_URL_QUERY = f'https://api.twitter.com/2/tweets/search/recent?query={query}?expansions=author_id?start_time={start_time}'
+    auth_response_QUERY = requests.get(BASE_URL_QUERY,  headers=headers)
+    res = auth_response_QUERY.json()
+    #res = client.search_recent_tweets(query=query, start_time=start_time ,expansions=["author_id"] )
     cur.execute(f"""UPDATE queries
                     SET Last_ran = '{run_time}'
                     WHERE query_idx = {query_idx}""")
     con.commit()
     
-    for i in range(len(res.includes['users'])):
+    for i in range(len(res['includes']['users'])):
         try:
-            user_id = res.includes['users'][i].id
-            public_name = res.includes['users'][i].name
-            user_name = res.includes['users'][i].username
-            tweet_id = res.data[i].id
-            tweet_text = res.data[i].text
+            user_id = res['includes']['users'][i].id
+            public_name = res['includes']['users'][i].name
+            user_name = res['includes']['users'][i].username
+            tweet_id = res['data'][i].id
+            tweet_text = res['data'][i].text
             tweet_text =tweet_text.replace('\n', ' ').replace('"',"'")
             retweet = False
             rt_user = None
@@ -84,14 +90,14 @@ def get_queried_tweets(con, client, querydf_row, run_time):
 
     
 
-def init_scrap(con, client, query=None):
+def init_scrap(con, bearertoken, query=None):
     output_date = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
     if query:
         df = pd.read_sql_query(f"SELECT * FROM queries WHERE query_idx = {query}",con)   
     else:
         df = pd.read_sql_query("SELECT * FROM queries",con)   
     for idx, row in df.iterrows():
-        get_queried_tweets(con, client, row, output_date)
+        get_queried_tweets(con, bearertoken, row, output_date)
     
 
 
@@ -254,6 +260,6 @@ def sediment(con, inc_rt=False):
                         VALUES ({row['query_idx']},"{row['pull_time']}","{feq}",{str_agg['neg']},{str_agg['neu']},{str_agg['pos']},{str_agg['comp']}, {query_pull_mean}, "{inc_rt}")""")
     con.commit()
     
-def run_tw_nlp(con, client, query=None, inc_rt=False):
-    init_scrap(con, client, query)
+def run_tw_nlp(con, bearertoken, query=None, inc_rt=False):
+    init_scrap(con, bearertoken, query)
     sediment(con, inc_rt)
