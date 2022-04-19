@@ -46,7 +46,7 @@ def get_queried_tweets(con, bearertoken, querydf_row, run_time):
         start_time = querydf_row['Last_ran']
     headers = {'Authorization': 'Bearer ' +
        bearertoken, 'Content-Type': 'application/json'}
-    BASE_URL_QUERY = f'https://api.twitter.com/2/tweets/search/recent?query={query}?expansions=author_id?start_time={start_time}'
+    BASE_URL_QUERY = f'https://api.twitter.com/2/tweets/search/recent?query={query}&expansions=author_id&start_time={start_time}'
     auth_response_QUERY = requests.get(BASE_URL_QUERY,  headers=headers)
     res = auth_response_QUERY.json()
     #res = client.search_recent_tweets(query=query, start_time=start_time ,expansions=["author_id"] )
@@ -98,69 +98,7 @@ def init_scrap(con, bearertoken, query=None):
         df = pd.read_sql_query("SELECT * FROM queries",con)   
     for idx, row in df.iterrows():
         get_queried_tweets(con, bearertoken, row, output_date)
-    
 
-
-pos_to_lemmatize={'NN':'n','NNS':'n','NNP':'n','NPPS':'n','WP':'n','WP$':'n',
-                 'VB':'v','VBD':'v','VBG':'v','VBN':'v','VBP':'v','VBZ':'v',
-                 'JJ':'a','JJR':'a','JJS':'a',
-                 'RB':'r','RBR':'r','RBS':'r','WRB':'r'}
-
-def processed_feature(text):
-    # Removing URLS
-    processed_feature = re.sub(r'https?:\S+', '', text)
-    # Remove all the special characters
-    processed_feature = re.sub(r'\W', ' ', processed_feature)
-    # remove all single characters
-    processed_feature= re.sub(r'\s+[a-zA-Z]\s+', ' ', processed_feature)
-    # Remove single characters from the start
-    processed_feature = re.sub(r'\^[a-zA-Z]\s+', ' ', processed_feature) 
-    # Substituting multiple spaces with single space
-    processed_feature = re.sub(r'\s+', ' ', processed_feature, flags=re.I)
-    # Removing prefixed 'b'
-    processed_feature = re.sub(r'^b\s+', '', processed_feature)
-    # Converting to Lowercase remove RT for retweets
-    processed_feature = processed_feature.lower().replace('RT ','')
-    return processed_feature
-
-def create_bag_of_words(text, lemmatize=True):
-    tokenized_word = nltk.tokenize.word_tokenize(text)
-    stop_words = set(nltk.corpus.stopwords.words("english"))
-    filtered_sent=[]
-    for w in tokenized_word:
-        if w not in stop_words:
-            filtered_sent.append(w)
-    pos_taged = nltk.pos_tag(filtered_sent)
-    ps  = nltk.stem.PorterStemmer()
-    lem = nltk.stem.wordnet.WordNetLemmatizer()
-    bag_of_words = []
-    if lemmatize:
-        for tag in pos_taged:
-            if tag[1] in pos_to_lemmatize:
-                bag_of_words.append(lem.lemmatize(tag[0],pos_to_lemmatize[tag[1]]))
-            else:
-                bag_of_words.append(ps.stem(tag[0]))
-    else:
-        for w in filtered_sent:
-            bag_of_words.append(ps.stem(w))
-    return bag_of_words
-
-def vadar(text):
-    out_put={'neg':None,
-             'neu':None,
-             'pos':None,
-             'Comp':None}
-    sia = SentimentIntensityAnalyzer()
-    out_put['neg'] = sia.polarity_scores(text)['neg']
-    out_put['neu'] = sia.polarity_scores(text)['neu']
-    out_put['pos'] = sia.polarity_scores(text)['pos']
-    out_put['Comp'] = sia.polarity_scores(text)['compound']
-    return out_put
-
-def cos_similarity(textlist):
-    TfidfVec = TfidfVectorizer()
-    tfidf = TfidfVec.fit_transform(textlist)
-    return (tfidf * tfidf.T).toarray()
 
 # n for noun files, v for verb files, a for adjective files, r for adverb
 pos_to_lemmatize={'NN':'n','NNS':'n','NNP':'n','NPPS':'n','WP':'n','WP$':'n',
