@@ -1,8 +1,8 @@
 Basic Twitter NLP
 ----
-Description: Simple set of comands to work with twitter and text setiment analysis
+Description: Simple set of comands to work with twitter and text sediment analysis
 
-NEEDED: Twitter Developer account for bearer token [Twitter Developer]('https://developer.twitter.com/en/docs/platform-overview')
+NEEDED: Twitter Developer account for bearer token [Twitter Developer](https://developer.twitter.com/en/docs/platform-overview)
 
 ### Getting Started 
 -----
@@ -10,7 +10,7 @@ Build Database to Store tweets and analysis. It will create the 5 tables needed 
 ```python
 db_init(con)
 ```
-Add Querys. It takes any query that is allowed by your Twitter api acesses. [Twitter Query Help Guide]('https://developer.twitter.com/en/docs/tutorials/building-high-quality-filters')
+Add Querys. It takes any query that is allowed by your Twitter api acesses. [Twitter Query Help Guide](https://developer.twitter.com/en/docs/tutorials/building-high-quality-filters)
 ```python
 add_query(twitter_query, con)
 ```

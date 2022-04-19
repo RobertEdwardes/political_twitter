@@ -19,8 +19,8 @@ def db_init(con):
     cur.execute("""CREATE TABLE tweets (user_id INTEGER, tweet_id INTEGER, query_idx INTEGER, urls BLOB, text TEXT, users BLOB, retweet TEXT, rt_user TEXT, hash_tags text, pull_time TEXT)""")
     cur.execute("""CREATE TABLE queries (query_idx INTEGER PRIMARY KEY AUTOINCREMENT, query BLOB, First_ran TEXT, Last_ran TEXT)""")
     cur.execute("""CREATE TABLE users (user_id INTEGER PRIMARY KEY, name TEXT, username TEXT, most_similar INTEGER, capture_count INTEGER DEFAULT 1)""")
-    cur.execute("""CREATE TABLE tweet_setiment (tweet_id INTEGER , tokens BLOB, setiment_neg REAL, setiment_neu REAL, setiment_pos REAL, setiment_comp REAL)""")
-    cur.execute("""CREATE TABLE query_setiment (query_idx INTEGER, pull_time TEXT, tokens BLOB, setiment_neg REAL, setiment_neu REAL, setiment_pos REAL, setiment_comp REAL, average_similarity REAL, rt_included TEXT)""")
+    cur.execute("""CREATE TABLE tweet_sediment (tweet_id INTEGER , tokens BLOB, sediment_neg REAL, sediment_neu REAL, sediment_pos REAL, sediment_comp REAL)""")
+    cur.execute("""CREATE TABLE query_sediment (query_idx INTEGER, pull_time TEXT, tokens BLOB, sediment_neg REAL, sediment_neu REAL, sediment_pos REAL, sediment_comp REAL, average_similarity REAL, rt_included TEXT)""")
     con.commit()
     
 
@@ -218,9 +218,9 @@ def cos_similarity(textlist):
     tfidf = TfidfVec.fit_transform(textlist)
     return (tfidf * tfidf.T).toarray()
 
-def setiment(con, inc_rt=False):
+def sediment(con, inc_rt=False):
     cur = con.cursor()
-    _proc = pd.read_sql_query("SELECT tweet_id FROM tweet_setiment",con)
+    _proc = pd.read_sql_query("SELECT tweet_id FROM tweet_sediment",con)
     _proc = _proc['tweet_id'].tolist()
     _proc = ','.join([str(i) for i in _proc])
     if _proc:
@@ -240,7 +240,7 @@ def setiment(con, inc_rt=False):
             pt = processed_feature(row['text'])
             tw= create_bag_of_words(pt)
             op = vadar(pt)
-            cur.execute(f"""INSERT INTO tweet_setiment (tweet_id , tokens , setiment_neg , setiment_neu , setiment_pos , setiment_comp )
+            cur.execute(f"""INSERT INTO tweet_sediment (tweet_id , tokens , sediment_neg , sediment_neu , sediment_pos , sediment_comp )
                             VALUES({row['tweet_id']},"{tw}",{op['neg']},{op['neu']},{op['pos']},{op['comp']})""")
             con.commit()
             full_pt.append(pt)
@@ -250,10 +250,10 @@ def setiment(con, inc_rt=False):
         str_agg = vadar(' '.join(full_pt))
         fd = nltk.probability.FreqDist(bag_group)
         feq = fd.most_common(10)
-        cur.execute(f"""INSERT INTO query_setiment (query_idx , pull_time , tokens , setiment_neg , setiment_neu , setiment_pos , setiment_comp , average_similarity, rt_included )
+        cur.execute(f"""INSERT INTO query_sediment (query_idx , pull_time , tokens , sediment_neg , sediment_neu , sediment_pos , sediment_comp , average_similarity, rt_included )
                         VALUES ({row['query_idx']},"{row['pull_time']}","{feq}",{str_agg['neg']},{str_agg['neu']},{str_agg['pos']},{str_agg['comp']}, {query_pull_mean}, "{inc_rt}")""")
     con.commit()
     
 def run_tw_nlp(con, client, query=None, inc_rt=False):
     init_scrap(con, client, query)
-    setiment(con, inc_rt)
+    sediment(con, inc_rt)

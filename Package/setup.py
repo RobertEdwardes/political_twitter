@@ -12,7 +12,7 @@ setup(
     description='Scrape Twitter based off query and runs NLTK vader and cos similarity model', 
     long_description=long_description, 
     long_description_content_type='text/markdown', 
-    url='',  
+    url='https://github.com/RobertEdwardes/political_twitter/tree/master/Package',  
     author='Robert Edwardes',  
     author_email='robie@fairlines.org',  
     classifiers=[  
