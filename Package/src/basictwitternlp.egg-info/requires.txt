@@ -1,6 +1,6 @@
 datetime
 sqlite3
-tweepy
+request
 re
 nltk
 pandas
