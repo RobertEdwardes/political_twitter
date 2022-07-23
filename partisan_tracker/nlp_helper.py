@@ -17,7 +17,26 @@ pos_to_lemmatize={'NN':'n','NNS':'n','NNP':'n','NPPS':'n','WP':'n','WP$':'n',
                  'JJ':'a','JJR':'a','JJS':'a',
                  'RB':'r','RBR':'r','RBS':'r','WRB':'r'}
 
-def processed_feature(text):
+stop_words = set(nltk.corpus.stopwords.words("english"))
+
+def remove_stop_words(text, stop_words=stop_words):
+    tokenized_word = nltk.tokenize.word_tokenize(text)
+    filtered_sent=[]
+    for w in tokenized_word:
+        if w not in stop_words:
+            filtered_sent.append(w)
+    return filtered_sent
+
+def processed_feature(text, pos_clean=True):
+    if pos_clean:
+        h=[]
+        tokens = nltk.word_tokenize(text)
+        tag = nltk.pos_tag(tokens)
+        #Remove words with unimportant Part of Speech
+        [h.append(word) for (word,pos) in tag if pos!='VB' and pos!='VBD'and pos!='VBG'and pos!='VBN'and 
+        pos!='VBP' and pos!='RB' and pos!='RBR' and pos!='RBS' and pos!='WRB' and pos!='DT' and pos!='TO'
+        and pos!='DT'and pos!='VBZ' and pos!='CC'and pos!='IN']
+        text = ' '.join(h)
     # Removing URLS
     processed_feature = re.sub(r'https?:\S+', '', text)
     # Remove all the special characters
@@ -42,12 +61,7 @@ def Tfidf(text):
     return zip(vectorizer.get_feature_names_out(), np.ravel(transformed_data.sum(axis=0)))
 
 def create_bag_of_words(text, lemmatize=True):
-    tokenized_word = nltk.tokenize.word_tokenize(text)
-    stop_words = set(nltk.corpus.stopwords.words("english"))
-    filtered_sent=[]
-    for w in tokenized_word:
-        if w not in stop_words:
-            filtered_sent.append(w)
+    filtered_sent=remove_stop_words(text)
     pos_taged = nltk.pos_tag(filtered_sent)
     ps  = nltk.stem.PorterStemmer()
     lem = nltk.stem.wordnet.WordNetLemmatizer()
@@ -62,6 +76,18 @@ def create_bag_of_words(text, lemmatize=True):
         for w in filtered_sent:
             bag_of_words.append(ps.stem(w))
     return bag_of_words
+
+def create_bag_of_phrases(text, n_gram_range=(2,3), stop_words=stop_words):
+    count = CountVectorizer(ngram_range=n_gram_range,stop_words=stop_words).fit(text)
+    bag_of_phrases = count.get_feature_names()
+    bag_of_phrases_out = []
+    for i in range(len(bag_of_phrases)):
+        if text[0].lower().find(bag_of_phrases[i]) > 0:
+            tokens = nltk.word_tokenize(bag_of_phrases[i])
+            tag = nltk.pos_tag(tokens)
+            if tag[-1][1] != 'JJ' and tag[-1][1] != 'JJR'and tag[-1][1] != 'JJS': 
+                bag_of_phrases_out.append(bag_of_phrases[i])
+    return bag_of_phrases
 
 def vadar(text):
     out_put={'neg':None,
