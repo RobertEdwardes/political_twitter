@@ -27,7 +27,37 @@ def remove_stop_words(text, stop_words=stop_words):
             filtered_sent.append(w)
     return filtered_sent
 
+def unescapematch(matchobj):
+     escapesequence = matchobj.group(0)
+     digits = escapesequence[2:]
+     ordinal = int(digits, 16)
+     char = chr(ordinal)
+     return char
+
 def processed_feature(text, pos_clean=True):
+    
+    # Removing URLS
+    processed_feature = re.sub(r'https?:\S+', '', text)
+    processed_feature = re.sub(r'^(.+?).\s', '', processed_feature)
+    # Remove all the special characters
+    processed_feature = re.sub(r'\W', ' ', processed_feature)
+    # Substituting multiple spaces with single space
+    processed_feature = re.sub(r'\s+', ' ', processed_feature, flags=re.I)
+    # Removing prefixed 'b'
+    processed_feature = re.sub(r'^b\s+', '', processed_feature)
+    # Remove unicode
+    processed_feature = re.sub(r'(\\u[0-9A-Fa-f]+)', unescapematch, processed_feature)
+    # Converting to Lowercase remove RT for retweets
+    processed_feature = processed_feature.lower().replace('RT ','')
+    # Remove paper page Numbers
+    processed_feature = re.sub(r'[a-zA-Z][0-9]', '', processed_feature)
+    processed_feature = re.sub(r'[0-9][a-zA-Z]', '', processed_feature)
+    # Remove numbers
+    processed_feature = re.sub(r'[\d.]*\d+', '', processed_feature)
+    # remove all single characters
+    processed_feature= re.sub(r'\s+[a-zA-Z]\s+', ' ', processed_feature)
+    # Remove single characters from the start
+    text = re.sub(r'\^[a-zA-Z]\s+', ' ', processed_feature) 
     if pos_clean:
         h=[]
         tokens = nltk.word_tokenize(text)
@@ -35,25 +65,10 @@ def processed_feature(text, pos_clean=True):
         #Remove words with unimportant Part of Speech
         [h.append(word) for (word,pos) in tag if pos!='VB' and pos!='VBD'and pos!='VBG'and pos!='VBN'and 
         pos!='VBP' and pos!='RB' and pos!='RBR' and pos!='RBS' and pos!='WRB' and pos!='DT' and pos!='TO'
-        and pos!='DT'and pos!='VBZ' and pos!='CC'and pos!='IN']
+        and pos!='MO'and pos!='VBZ' and pos!='CC'and pos!='IN' and pos!='FW' and pos!='RP' and pos!='PRP$' 
+        and pos!='PRP' and pos not in ['JJ','JJR','JJS'] and pos!='CD']
         text = ' '.join(h)
-    # Removing URLS
-    processed_feature = re.sub(r'https?:\S+', '', text)
-    # Remove all the special characters
-    processed_feature = re.sub(r'\W', ' ', processed_feature)
-    # remove all single characters
-    processed_feature= re.sub(r'\s+[a-zA-Z]\s+', ' ', processed_feature)
-    # Remove single characters from the start
-    processed_feature = re.sub(r'\^[a-zA-Z]\s+', ' ', processed_feature) 
-    # Substituting multiple spaces with single space
-    processed_feature = re.sub(r'\s+', ' ', processed_feature, flags=re.I)
-    # Removing prefixed 'b'
-    processed_feature = re.sub(r'^b\s+', '', processed_feature)
-    # Remove numbers
-    processed_feature = re.sub(r'[\d.]*\d+', '', processed_feature)
-    # Converting to Lowercase remove RT for retweets
-    processed_feature = processed_feature.lower().replace('RT ','')
-    return processed_feature
+    return text
 
 def Tfidf(text):
     vectorizer = TfidfVectorizer(stop_words='english')
@@ -79,7 +94,7 @@ def create_bag_of_words(text, lemmatize=True):
 
 def create_bag_of_phrases(text, n_gram_range=(2,3), stop_words=stop_words):
     count = CountVectorizer(ngram_range=n_gram_range,stop_words=stop_words).fit(text)
-    bag_of_phrases = count.get_feature_names()
+    bag_of_phrases = count.get_feature_names_out()
     bag_of_phrases_out = []
     for i in range(len(bag_of_phrases)):
         if text[0].lower().find(bag_of_phrases[i]) > 0:

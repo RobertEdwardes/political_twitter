@@ -1,0 +1,8 @@
+datetime
+sqlite3
+request
+re
+nltk
+pandas
+numpy
+sklearn

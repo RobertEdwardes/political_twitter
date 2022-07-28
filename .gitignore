@@ -2,5 +2,6 @@ config.py
 config_new.py
 __pycache__
 *.db
-basictwitternlp/*
-png/*
+basictwitternlp/*.ipynb
+basictwitternlp/*.py
+partisan_tracker/*
