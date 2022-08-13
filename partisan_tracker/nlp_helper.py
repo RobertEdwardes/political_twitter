@@ -44,7 +44,7 @@ def processed_feature(text, pos_clean=True):
     # Substituting multiple spaces with single space
     processed_feature = re.sub(r'\s+', ' ', processed_feature, flags=re.I)
     # Removing prefixed 'b'
-    processed_feature = re.sub(r'^b\s+', '', processed_feature)
+    processed_feature = re.sub(r'^b\s+', ' ', processed_feature)
     # Remove unicode
     processed_feature = re.sub(r'(\\u[0-9A-Fa-f]+)', unescapematch, processed_feature)
     # Converting to Lowercase remove RT for retweets
@@ -55,9 +55,9 @@ def processed_feature(text, pos_clean=True):
     # Remove numbers
     processed_feature = re.sub(r'[\d.]*\d+', '', processed_feature)
     # remove all single characters
-    processed_feature= re.sub(r'\s+[a-zA-Z]\s+', ' ', processed_feature)
+    processed_feature= re.sub(r'\s+[a-zA-Z]\s+', '', processed_feature)
     # Remove single characters from the start
-    text = re.sub(r'\^[a-zA-Z]\s+', ' ', processed_feature) 
+    text = re.sub(r'\^[a-zA-Z]\s+', '', processed_feature) 
     if pos_clean:
         h=[]
         tokens = nltk.word_tokenize(text)
