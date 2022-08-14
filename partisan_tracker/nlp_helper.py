@@ -98,9 +98,7 @@ def create_bag_of_phrases(text, n_gram_range=(2,3), stop_words=stop_words):
     bag_of_phrases_out = []
     for i in range(len(bag_of_phrases)):
         if text[0].lower().find(bag_of_phrases[i]) > 0:
-            tokens = nltk.word_tokenize(bag_of_phrases[i])
-            tag = nltk.pos_tag(tokens)
-            if tag[-1][1] != 'JJ' and tag[-1][1] != 'JJR'and tag[-1][1] != 'JJS': 
+            if re.match('/D|[^/D/d]'):
                 bag_of_phrases_out.append(bag_of_phrases[i])
     return bag_of_phrases
 
